@@ -9,24 +9,25 @@ import (
 	"os"
 )
 
+func main() {
+	digits()
+}
+
 func digits() {
-	dataSet, _ := nist.ReadTrainSet("./data")
+	nn := load()
+	train(&nn)
+	save(&nn)
+	test(&nn)
+}
 
-	imageColors := make([]float64, 28*28)
-
-	nn := &neural.NeuralNetwork{}
-
-	jsonDataNN, err := os.ReadFile("data/nn.json")
-	if err == nil {
-		json.Unmarshal(jsonDataNN, nn)
-	} else {
-		nn.Create([]int{dataSet.W * dataSet.H, 64, 64, 10})
-	}
-
+func train(nn *neural.NeuralNetwork) {
 	fmt.Println("START LEARNING")
+
+	dataSet, _ := nist.ReadTrainSet("./data")
+	imageColors := make([]float64, 28*28)
 	right := 0
 	nnerror := float64(0)
-	for i := 0; i < 200000; i++ {
+	for i := 0; i < 20000; i++ {
 		learnImageIndex := rand.Int() % 60000
 		image := dataSet.Data[learnImageIndex]
 
@@ -59,20 +60,20 @@ func digits() {
 		}
 
 		if (i+1)%1000 == 0 {
-			println("RIGHT: ", right, " ERROR: ", fmt.Sprintf("%f", nnerror))
+			println("BATCH: ", i/1000, " RIGHT: ", right, " ERROR: ", fmt.Sprintf("%f", nnerror))
 			right = 0
 			nnerror = 0.0
 		}
 
-		nn.BackPropagation(target, 0.006, 0.05)
+		nn.BackPropagation(target, 0.001, 0.5)
 	}
+}
 
-	save(nn)
-
+func test(nn *neural.NeuralNetwork) {
 	fmt.Println("START TESTING")
-
-	dataSet, _ = nist.ReadTestSet("./data")
-	right = 0
+	imageColors := make([]float64, 28*28)
+	dataSet, _ := nist.ReadTestSet("./data")
+	right := 0
 	for i := 0; i < dataSet.N; i++ {
 		image := dataSet.Data[i]
 		ii := 0
@@ -98,19 +99,28 @@ func digits() {
 		}
 
 	}
-
 	fmt.Println("Right: ", right)
 }
 
+func load() neural.NeuralNetwork {
+	nn := &neural.NeuralNetwork{}
+	jsonDataNN, err := os.ReadFile("data/nn.json")
+	if err == nil {
+		err1 := json.Unmarshal(jsonDataNN, nn)
+		if err1 != nil {
+			fmt.Println(err1)
+		}
+	} else {
+		nn.Create([]int{28 * 28, 64, 64, 10})
+	}
+	return *nn
+}
+
 func save(nn *neural.NeuralNetwork) {
+	nn.Clean()
 	nnJson, _ := json.Marshal(nn)
 	err := os.WriteFile("data/nn.json", nnJson, 0644)
 	if err != nil {
 		fmt.Println(err)
 	}
-}
-
-func main() {
-
-	digits()
 }

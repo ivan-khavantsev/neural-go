@@ -5,10 +5,20 @@ import (
 	"math/rand"
 )
 
+type NeuralNetwork struct {
+	Layers []Layer
+	State  *State
+}
+
 type Layer struct {
 	Neurons []float64
 	Weights [][]float64
 	Biases  []float64
+}
+
+type State struct {
+	DeltaWeights [][][]float64
+	DeltaBiases  [][]float64
 }
 
 func (l *Layer) init(size int, nextSize int) {
@@ -18,16 +28,6 @@ func (l *Layer) init(size int, nextSize int) {
 	for i := range l.Weights {
 		l.Weights[i] = make([]float64, nextSize)
 	}
-}
-
-type State struct {
-	DeltaWeights [][][]float64
-	DeltaBiases  [][]float64
-}
-
-type NeuralNetwork struct {
-	Layers []Layer
-	State  *State
 }
 
 func (nn *NeuralNetwork) Create(sizes []int) {
@@ -69,6 +69,15 @@ func (nn *NeuralNetwork) FeedForward(inputs []float64) []float64 {
 		}
 	}
 	return nn.Layers[len(nn.Layers)-1].Neurons
+}
+
+// Очистить все значения нейронов, например для сохранения сети
+func (nn *NeuralNetwork) Clean() {
+	for i := range nn.Layers {
+		for j := range nn.Layers[i].Neurons {
+			nn.Layers[i].Neurons[j] = 0
+		}
+	}
 }
 
 func (nn *NeuralNetwork) BackPropagation(targets []float64, learningRate float64, moment float64) {
