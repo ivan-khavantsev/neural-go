@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -16,8 +17,9 @@ func main() {
 func digits() {
 	nn := load()
 	train(&nn)
-	save(&nn)
 	test(&nn)
+	save(&nn)
+	fmt.Println("Exit...")
 }
 
 func train(nn *neural.NeuralNetwork) {
@@ -117,10 +119,17 @@ func load() neural.NeuralNetwork {
 }
 
 func save(nn *neural.NeuralNetwork) {
-	nn.Clean()
-	nnJson, _ := json.Marshal(nn)
-	err := os.WriteFile("data/nn.json", nnJson, 0644)
-	if err != nil {
-		fmt.Println(err)
+	fmt.Print("To save NeuralNetwork press y:")
+	key, _ := bufio.NewReader(os.Stdin).ReadByte()
+	if key == 121 || key == 89 {
+		fmt.Println("Saving...")
+		nn.Clean()
+		nnJson, _ := json.Marshal(nn)
+		err := os.WriteFile("data/nn.json", nnJson, 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		fmt.Println("Do not save!")
 	}
 }
