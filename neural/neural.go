@@ -5,6 +5,22 @@ import (
 	"math/rand"
 )
 
+func Sigmoid(x float64) float64 {
+	return float64(1) / (float64(1) + math.Exp(-x))
+}
+
+func SigmoidDerivative(x float64) float64 {
+	return x * (float64(1) - x)
+}
+
+func Tanh(x float64) float64 {
+	return math.Tanh(x)
+}
+
+func TanhDerivative(x float64) float64 {
+	return 1 - math.Pow(math.Tanh(x), 2)
+}
+
 type NeuralNetwork struct {
 	Layers []Layer
 	State  *State
@@ -53,9 +69,6 @@ func (nn *NeuralNetwork) Create(sizes []int) {
 }
 
 func (nn *NeuralNetwork) FeedForward(inputs []float64) []float64 {
-
-	sigmoid := func(x float64) float64 { return float64(1) / (float64(1) + math.Exp(-x)) } // Сигмоида активации. Вынести
-
 	for i := range inputs {
 		nn.Layers[0].Neurons[i] = inputs[i]
 	}
@@ -68,7 +81,7 @@ func (nn *NeuralNetwork) FeedForward(inputs []float64) []float64 {
 				nl.Neurons[i] += cl.Neurons[j] * cl.Weights[j][i]
 			}
 			nl.Neurons[i] += nl.Biases[i]
-			nl.Neurons[i] = sigmoid(nl.Neurons[i])
+			nl.Neurons[i] = Sigmoid(nl.Neurons[i])
 		}
 	}
 	return nn.Layers[len(nn.Layers)-1].Neurons
@@ -84,8 +97,6 @@ func (nn *NeuralNetwork) Clean() {
 }
 
 func (nn *NeuralNetwork) BackPropagation(targets []float64, learningRate float64, moment float64) {
-
-	sigmoidDerivative := func(x float64) float64 { return x * (float64(1) - x) }
 	if nn.State.DeltaWeights == nil || nn.State.DeltaBiases == nil {
 		nn.State.DeltaWeights = make([][][]float64, len(nn.Layers))
 		nn.State.DeltaBiases = make([][]float64, len(nn.Layers))
@@ -104,7 +115,7 @@ func (nn *NeuralNetwork) BackPropagation(targets []float64, learningRate float64
 
 		gradients := make([]float64, len(cl.Neurons))
 		for i := 0; i < len(cl.Neurons); i++ {
-			gradients[i] = errors[i] * sigmoidDerivative(cl.Neurons[i])
+			gradients[i] = errors[i] * SigmoidDerivative(cl.Neurons[i])
 		}
 
 		errorsNext := make([]float64, len(nl.Neurons))
