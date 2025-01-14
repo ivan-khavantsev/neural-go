@@ -46,6 +46,7 @@ func (l *Layer) init(size int, nextSize int) {
 	}
 }
 
+// Create Принимает массив значений количеств нейронов в каждом слое. Пример {28 * 28, 64, 64, 10} - 784 на входном слое, 64 - на втором, 64 - на третьем, 10 на выходном.
 func (nn *NeuralNetwork) Create(sizes []int) {
 	nn.Layers = make([]Layer, len(sizes))
 	for i := 0; i < len(sizes); i++ {
@@ -68,6 +69,7 @@ func (nn *NeuralNetwork) Create(sizes []int) {
 	nn.State = &State{}
 }
 
+// FeedForward Принимает массив значений для нейронов входного слоя. Возвращает массив значений нейронов выходного слоя
 func (nn *NeuralNetwork) FeedForward(inputs []float64) []float64 {
 	for i := range inputs {
 		nn.Layers[0].Neurons[i] = inputs[i]
@@ -75,19 +77,29 @@ func (nn *NeuralNetwork) FeedForward(inputs []float64) []float64 {
 	for l := 1; l < len(nn.Layers); l++ {
 		cl := &nn.Layers[l-1]
 		nl := &nn.Layers[l]
+		done := make(chan bool, len(nl.Neurons))
 		for i := 0; i < len(nl.Neurons); i++ {
-			nl.Neurons[i] = 0
-			for j := 0; j < len(cl.Neurons); j++ {
-				nl.Neurons[i] += cl.Neurons[j] * cl.Weights[j][i]
-			}
-			nl.Neurons[i] += nl.Biases[i]
-			nl.Neurons[i] = Sigmoid(nl.Neurons[i])
+			go calcNextForward(nl.Neurons, cl.Neurons, nl.Biases, cl.Weights, i, done)
+		}
+		for i := 0; i < len(nl.Neurons); i++ {
+			<-done
 		}
 	}
 	return nn.Layers[len(nn.Layers)-1].Neurons
 }
 
-// Очистить все значения нейронов, например для сохранения сети
+// calcNextForward горутина для вычисления значения нейрона следующего слоя
+func calcNextForward(nl, cl, biases []float64, weights [][]float64, i int, done chan bool) {
+	nl[i] = 0
+	for j := 0; j < len(cl); j++ {
+		nl[i] += cl[j] * weights[j][i]
+	}
+	nl[i] += biases[i]
+	nl[i] = Sigmoid(nl[i])
+	done <- true
+}
+
+// Clean Очистить все значения нейронов, например для сохранения сети
 func (nn *NeuralNetwork) Clean() {
 	for i := range nn.Layers {
 		for j := range nn.Layers[i].Neurons {
@@ -96,6 +108,7 @@ func (nn *NeuralNetwork) Clean() {
 	}
 }
 
+// BackPropagation Обратное распространение ошибки
 func (nn *NeuralNetwork) BackPropagation(targets []float64, learningRate float64, moment float64) {
 	if nn.State.DeltaWeights == nil || nn.State.DeltaBiases == nil {
 		nn.State.DeltaWeights = make([][][]float64, len(nn.Layers))
