@@ -29,7 +29,7 @@ func train(nn *neural.NeuralNetwork) {
 	imageColors := make([]float64, 28*28)
 	right := 0
 	nnerror := float64(0)
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 100000; i++ {
 		learnImageIndex := rand.Int() % 60000
 		image := dataSet.Data[learnImageIndex]
 
